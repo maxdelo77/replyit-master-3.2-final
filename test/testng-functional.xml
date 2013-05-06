@@ -1,0 +1,49 @@
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd" >
+
+<suite name="jBilling Functional Test Suite" verbose="2" parallel="false">
+
+    <!--
+        Note that "preserve-order" won't work with tests annotated with @Test(dependsOn* ...)
+        when order is defined using annotations the order here will always loose, so do all your
+        ordering here or ENTIRELY using groups/method dependency annotations.
+    -->
+
+	<test name="web-services" preserve-order="true">
+		<classes>
+        	<class name="com.sapienter.jbilling.server.order.WSTest"/>
+            <class name="com.sapienter.jbilling.server.user.WSTest"/>
+            <class name="com.sapienter.jbilling.server.payment.WSTest"/>
+            <class name="com.sapienter.jbilling.server.item.WSTest"/>
+            <class name="com.sapienter.jbilling.server.invoice.WSTest"/>
+            <class name="com.sapienter.jbilling.server.process.WSTest"/>
+            <class name="com.sapienter.jbilling.server.pricing.WSTest"/>
+            <class name="com.sapienter.jbilling.server.pricing.strategy.CappedGraduatedPricingWSTest"/>
+            <class name="com.sapienter.jbilling.server.pricing.strategy.GraduatedPricingWSTest"/>
+            <class name="com.sapienter.jbilling.server.pricing.strategy.ItemSelectorPricingWSTest"/>
+            <class name="com.sapienter.jbilling.server.pricing.strategy.PooledPricingWSTest"/>
+            <class name="com.sapienter.jbilling.server.pricing.strategy.QuantityAddonPricingWSTest"/>
+            <class name="com.sapienter.jbilling.server.pricing.strategy.RateCardPricingStrategyWSTest"/>
+            <class name="com.sapienter.jbilling.server.user.PartnerWSTest"/>
+            <class name="com.sapienter.jbilling.server.payment.RefundTest"/>
+		</classes>
+	</test>
+
+	<test name="integration" preserve-order="true">
+		<classes>
+            <class name="com.sapienter.jbilling.server.item.CurrencyExchangeTest"/>
+			<class name="com.sapienter.jbilling.server.process.BillingProcessTest"/>
+			<class name="com.sapienter.jbilling.server.mediation.MediationTest"/>
+			<class name="com.sapienter.jbilling.server.provisioning.ProvisioningTest"/>
+			<class name="com.sapienter.jbilling.server.process.AgeingTest"/>
+			<class name="com.sapienter.jbilling.server.task.SimpleTaxCompositionTaskTest"/>
+			<class name="com.sapienter.jbilling.server.task.CountryTaxCompositionTaskTest"/>
+			<class name="com.sapienter.jbilling.server.task.PaymentTermPenaltyTaskTest"/>
+
+            <!-- currently broken due to a bug -->
+            <!--
+            <class name="com.sapienter.jbilling.server.user.tasks.NewContactWebServiceTaskTest"/>
+            -->
+        </classes>
+	</test>
+
+</suite>

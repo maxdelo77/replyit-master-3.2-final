@@ -1,0 +1,99 @@
+REQUIREMENTS:
+-------------
+PHP 5.0+
+PHP 5 Soap extension (http://www.php.net/soap)
+
+
+INSTALLATION:
+-------------
+Copy the contents of the /src folder to your project.
+
+
+UNIT TESTING:
+-------------
+To use the testing package, install PHP Unit 3 via PEAR.
+
+pear channel-discover pear.phpunit.de
+pear install phpunit/PHPUnit
+
+
+USAGE:
+------
+Include the jBillingAPIFactory in your project using something like:
+
+<code>require_once( "jbillingphpapi/src/JbillingAPIFactory.php" );</code>
+
+Currently, only CXF (SOAP) is supported. A future version will include the Hessian protocol as well. The CXF API can be created like this: 
+
+<code>
+$api = jbillingAPIFactory::getAPI( "http://localhost:8080/billing/cxf/soap.service?wsdl", "admin", "123qwe", JBILLINGAPI_TYPE_CXF );
+
+// Instantiate each of the required JBilling objects
+$UserWS = new UserWS();
+$OrderWS = new OrderWS();
+$ContactWS = new ContactWS();
+$OrderLineWS = new OrderLineWS();
+$CreditCardDTO = new CreditCardDTO();
+
+// Define Jbilling user properties
+$UserWS->setUserName( "PHP-TESTING" );
+$UserWS->setPassword( "secret123" );
+$UserWS->setLanguageId( 1 ); // English
+$UserWS->setMainRoleId( 5 ); // Customer
+$UserWS->setRole( "Customer" );
+$UserWS->setStatusId( 1 ); // Active
+$UserWS->setSubscriberStatusId( 1 ); // Pre-paid
+
+// Define Jbilling contact properties
+$ContactWS->setFirstName( "PHP" );
+$ContactWS->setLastName( "Testing" );
+$ContactWS->setPhoneNumber( "123-456-7890" );
+$ContactWS->setEmail( "test@test.com" );
+$ContactWS->setAddress1( "123 Anywhere St" );
+$ContactWS->setCity( "Some City" );
+$ContactWS->setStateProvince( "Some State" );
+$ContactWS->setPostalCode( "12345" );
+
+// Apply contact object to user contact property
+$UserWS->setContact( $ContactWS );
+
+// Define Jbilling credit card properties
+$CreditCardDTO->setName( "PHP Testing" );
+$CreditCardDTO->setNumber( "4012888888881881" );
+$CreditCardDTO->setSecurityCode( 123 );
+$CreditCardDTO->setType( 2 ); // Visa
+// Define date as ISO 8601 format
+$CreditCardDTO->setExpiry( date("c") );
+
+// Add the credit card to the user credit card property
+$UserWS->setCreditCard( $CreditCardDTO );
+
+// Set Jbilling OrderLineWS properties
+$OrderLineWS->setUseItem( true );
+$OrderLineWS->setItemId( 1 ); // MAKE SURE THIS ITEM MATCHES AN ITEM YOUR SYSTEM!
+$OrderLineWS->setTypeId( 1 ); // Item
+$OrderLineWS->setQuantity( 1 );
+$OrderLineWS->setDescription( "test from php api" );
+
+// Set Jbilling purchase order properties
+$OrderWS->setPeriod( 1 ); // Monthly
+$OrderWS->setOrderLines( array( $OrderLineWS ) );
+$OrderWS->setBillingTypeId( 1 );
+$OrderWS->setCurrencyId( 1 ); // US Dollar
+$OrderWS->getBillingTypeId( 1 );  // Pre-paid
+$OrderWS->setUserId( 22 ); // Penny bright
+
+// Attempt to create the new user and purcahse order
+try {
+      print_r( $api->create( $UserWS, $OrderWS ) ); // New id's returned
+      //print_r( $api->createUser( $UserWS ) );  // New user id returned
+      //print_r( $api->createOrder( $OrderWS ) ); // New order id returned
+      //print_r( $api->getUserWS( 22 ) );  // User details for penny bright
+}
+catch( JbillingAPIException $jbex ) {
+
+        print_r( $jbex );
+}
+</code>
+
+Enjoy! :)

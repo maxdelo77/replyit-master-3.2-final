@@ -1,0 +1,131 @@
+<!--
+    Delegating build script, used by Cruise Control to build the source tree and run all
+    tests with a common test output directory.
+
+    You must define a 'cc-build.properties' file to set the grails server port and
+    database connection details for the running instance of jBilling. This is to ensure
+    that multiple instances of jBilling can be run under the same Cruise Control build loop.
+
+    Add to your ant script if you run into memory issues:
+
+           ANT_OPTS="-Xms64m -Xmx512m -XX:MaxPermSize=256m"
+
+    @author: Brian Cowdery
+    @since: Dec-13-2011
+-->
+
+<project name="CruiseControl Build" default="test.quick" basedir=".">
+
+    <property name="root.dir" value="."/>
+    <property file="cc-build.properties" />
+
+    <property environment="env"/>
+
+    <condition property="cc-grails.home" value="${env.GRAILS_HOME}">
+        <not>
+            <isset property="cc-grails.home"/>
+        </not>
+    </condition>
+
+    <condition property="cc-grails" value="${cc-grails.home}\bin\grails.bat">
+        <os family="windows"/>
+    </condition>
+    <property name="cc-grails" value="${cc-grails.home}/bin/grails"/>
+
+
+    <!-- 
+        Targets
+    -->
+
+    <target name="test.all" depends="init" description="Run entire test suite">
+        <antcall target="start"/>
+        <ant antfile="build.xml" target="test" inheritall="true" inheritrefs="true"/>
+        <antcall target="stop"/>
+    </target>
+
+    <target name="test.quick" depends="init" description="Run quick check-in tests">
+        <antcall target="start"/>
+        <ant antfile="build.xml" target="test-checkin" inheritall="true" inheritrefs="true"/>        
+        <antcall target="stop"/>
+    </target>
+
+    <target name="init" depends="clean" description="Update the data source and remote bean definitions for the test run.">
+        <!-- update DataSource.groovy connection details -->
+        <replace file="${root.dir}/grails-app/conf/DataSource.groovy">
+            <replacefilter token='username = "jbilling"'
+                           value='username = "${test_db_user}"'/>
+        </replace>
+
+        <replace file="${root.dir}/grails-app/conf/DataSource.groovy">
+            <replacefilter token="jdbc:postgresql://localhost:5432/jbilling_test"
+                           value="jdbc:postgresql://localhost:5432/${test_db}"/>
+        </replace>
+
+        <!-- update remote bean definitions with the running server port -->
+        <replace file="${root.dir}/descriptors/spring/jbilling-remote-beans.xml">
+            <replacefilter token="8080" value="${server_port}"/>
+        </replace>
+    </target>
+
+    <target name="clean" description="Complete clean and recompile of all source-code, resources, and testing databases.">
+        <!-- make sure jbilling was shutdown after the previous run -->
+        <exec executable="./shutdown.sh"/>
+
+        <!-- delete some leftover junk from previous runs -->
+        <delete file="nohup.out"/>
+        <delete file="velocity.log*"/>
+        <delete file="TESTS-TestSuites.xml"/>
+
+        <!-- delete previous test-results -->
+        <delete dir="${root.dir}/target/test-results"/>
+        <property name="test-results.cleaned" value="true"/> <!-- mark test results as clean so the build doesn't do it again -->
+
+        <!-- clean and re-compile -->
+        <echo message="Building with grails ${cc-grails}"/>
+
+        <exec dir="${root.dir}" executable="${cc-grails}" failonerror="true">
+            <arg value="clean"/>
+        </exec>
+        <exec dir="${root.dir}" executable="${cc-grails}" failonerror="false"> <!-- always fails -->
+            <arg value="compile"/>
+        </exec>
+        <exec dir="${root.dir}" executable="${cc-grails}" failonerror="true">  <!-- should compile on the 2nd try -->
+            <arg value="compile"/>
+        </exec>
+
+        <!-- compile resources and load testing database -->
+        <exec dir="${root.dir}" executable="${cc-grails}" failonerror="true">
+            <arg value="prepare-test"/>
+            <arg value="-hard"/>
+            <arg value="-user=${test_db_user}"/>
+            <arg value="-db=${test_db}"/>
+        </exec>
+    </target>
+
+
+    <!-- 
+         jBilling Start / Stop
+    -->
+
+    <target name="start" description="Start jBilling and wait for the application to become available.">
+        <exec executable="./startup.sh" spawn="true">
+            <env key="GRAILS_HOME" value="${cc-grails.home}"/>
+        </exec>
+
+        <echo message="Waiting for application to start on port ${server_port} ..."/>
+        <waitfor maxwait="3" maxwaitunit="minute" checkevery="500" timeoutproperty="startup.timeout">
+            <http url="http://localhost:${server_port}/jbilling"/>
+        </waitfor>  
+        <antcall target="stop.if.failed"/>
+    </target>
+
+    <target name="stop" description="Shutdown jBilling.">
+        <exec executable="./shutdown.sh"/>
+    </target>
+
+    <target name="stop.if.failed" if="startup.timeout">
+        <exec executable="./shutdown.sh"/>
+        <fail message="jBilling failed start in the expected time."/>
+    </target>
+
+</project>

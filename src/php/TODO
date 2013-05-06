@@ -1,0 +1,37 @@
+- Create unit tests for the following API methods
+	o updateUserContact
+	o getUserItemsByCategory
+	o getPayment
+	o validatePurchase
+	o getLastInvoicesByItemType
+	o createOrderPreAuthorize
+	o getCurrentOrder
+	o authenticate
+	o getUsersNotInStatus
+	o getUsersInStatus
+	o getLastInvoices
+	o getUserId
+	o getUserTransitions
+	o getInvoicesByDate
+	o getLastPayments
+	o getUsersByCustomField
+	o deleteUser
+	o getLatestPayment
+	o isUserSubscribedTo
+	o deleteOrder
+	o createOrderAndInvoice
+	o getLatestOrderByItemType
+	o getOrderByPeriod
+	o updateCurrentOrder
+	o getLastOrdersByItemType
+	o getAllItems
+	o updateCreditCard
+	o getLatestInvoiceByItemType
+	o getInvoiceWS
+
+	- Get documentation for the following methods so they can be implemented
+		o getUsersByStatus
+		o getUserContactsWS
+		o getUsersByCreditCard
+
+- Implement Hession API type

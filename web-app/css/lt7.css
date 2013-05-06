@@ -1,0 +1,40 @@
+/*
+ * JBILLING CONFIDENTIAL
+ * _____________________
+ *
+ * [2003] - [2012] Enterprise jBilling Software Ltd.
+ * All Rights Reserved.
+ *
+ * NOTICE:  All information contained herein is, and remains
+ * the property of Enterprise jBilling Software.
+ * The intellectual and technical concepts contained
+ * herein are proprietary to Enterprise jBilling Software
+ * and are protected by trade secret or copyright law.
+ * Dissemination of this information or reproduction of this material
+ * is strictly forbidden.
+ */
+
+* html body {
+	width:expression(document.documentElement.clientWidth < 998 ? "998px" : "auto");
+}
+#navigation ul li ,
+#header .top-nav li {zoom:1; display:inline;}
+#header .top-nav li{
+	background: expression( (this===this.parentNode.childNodes[0]) ? "none" : "url(../images/separator02.gif) no-repeat 0 50%");
+}
+#navigation ul li{
+	background: expression( (this===this.parentNode.childNodes[0]) ? "none" : "url(../images/separator01.gif) no-repeat 0 50%");
+}
+#navigation ul li {
+	padding:0 7px;
+}
+.lightbox .bg-lightbox {
+	background:url(../images/none.gif);
+	filter: progid:dximagetransform.microsoft.alphaimageloader(src='../images/bg-lightbox.png', sizingmethod='crop');
+}
+.table-box li,
+.buttons,
+.form-columns,
+.form-columns .row {
+	zoom:1;
+}

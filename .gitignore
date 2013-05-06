@@ -1,0 +1,33 @@
+# build artifacts
+build/
+target/
+resources/
+image/
+changelog
+
+# temp files
+activemq-data/
+out/
+tmp/
+logs/
+*.log
+*.log.*
+*~
+.ant-targets*.xml
+*.jasper
+*.BAK
+# external libraries
+libs/
+# project files
+.idea/
+*.iml
+.project
+.classpath
+.settings
+.link_to_grails_plugins/
+# local git configuration
+.gitattributes
+/classes/
+/target-eclipse/
+# license file that should not be part of the repository
+license.txt

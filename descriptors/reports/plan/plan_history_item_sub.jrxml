@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="total_invoiced_day" pageWidth="554" pageHeight="802" columnWidth="554" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0">
+	<property name="ireport.zoom" value="1.996500000000001"/>
+	<property name="ireport.x" value="100"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String">
+		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<parameter name="plan_item_id" class="java.lang.Integer"/>
+	<queryString>
+		<![CDATA[select
+	i.id as item_id,
+	i.internal_number as product_code,
+	i18n.content as product_description,
+	tl.start_date,
+	pm.id as price_model_id,
+	pm.strategy_type,
+	pm.rate
+from
+	plan_item pi
+	join item i on i.id = pi.item_id
+	join plan_item_price_timeline tl on tl.plan_item_id = pi.id
+	join price_model pm on pm.id = tl.price_model_id
+	join international_description i18n on i18n.table_id = 14
+								 and i18n.psudo_column = 'description'
+								 and i18n.language_id = 1
+								 and i18n.foreign_id = i.id
+        where
+            pi.id = $P{plan_item_id}
+        order by tl.start_date desc]]>
+	</queryString>
+	<field name="item_id" class="java.lang.Integer"/>
+	<field name="product_code" class="java.lang.String"/>
+	<field name="product_description" class="java.lang.String"/>
+	<field name="start_date" class="java.sql.Timestamp"/>
+	<field name="price_model_id" class="java.lang.Integer"/>
+	<field name="strategy_type" class="java.lang.String"/>
+	<field name="rate" class="java.math.BigDecimal"/>
+	<detail>
+		<band height="42">
+			<line>
+				<reportElement x="170" y="1" width="384" height="1">
+					<printWhenExpression><![CDATA[Boolean.valueOf($V{COLUMN_COUNT} > 1)]]></printWhenExpression>
+				</reportElement>
+				<graphicElement>
+					<pen lineWidth="0.5" lineStyle="Solid"/>
+				</graphicElement>
+			</line>
+			<textField>
+				<reportElement x="0" y="2" width="170" height="20">
+					<printWhenExpression><![CDATA[Boolean.valueOf($V{COLUMN_COUNT} == 1)]]></printWhenExpression>
+				</reportElement>
+				<box leftPadding="2"/>
+				<textElement verticalAlignment="Middle">
+					<font isItalic="false"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{product_description}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="0" y="22" width="12" height="20">
+					<printWhenExpression><![CDATA[Boolean.valueOf($V{COLUMN_COUNT} == 1)]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Right" verticalAlignment="Top">
+					<font size="8" isItalic="true"/>
+				</textElement>
+				<text><![CDATA[id:]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="12" y="22" width="53" height="20">
+					<printWhenExpression><![CDATA[Boolean.valueOf($V{COLUMN_COUNT} == 1)]]></printWhenExpression>
+				</reportElement>
+				<box leftPadding="5"/>
+				<textElement verticalAlignment="Top">
+					<font size="8" isItalic="true"/>
+				</textElement>
+				<textFieldExpression class="java.lang.Integer"><![CDATA[$F{item_id}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="65" y="22" width="25" height="20">
+					<printWhenExpression><![CDATA[Boolean.valueOf($V{COLUMN_COUNT} == 1)]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Right" verticalAlignment="Top">
+					<font size="8" isItalic="true"/>
+				</textElement>
+				<text><![CDATA[code:]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="90" y="22" width="80" height="20">
+					<printWhenExpression><![CDATA[Boolean.valueOf($V{COLUMN_COUNT} == 1)]]></printWhenExpression>
+				</reportElement>
+				<box leftPadding="5"/>
+				<textElement verticalAlignment="Top">
+					<font size="8" isItalic="true"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{product_code}]]></textFieldExpression>
+			</textField>
+			<textField pattern="MMMMM dd, yyyy">
+				<reportElement x="170" y="2" width="130" height="20"/>
+				<textElement verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<textFieldExpression class="java.util.Date"><![CDATA[$F{start_date}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="300" y="2" width="150" height="20"/>
+				<box leftPadding="0"/>
+				<textElement verticalAlignment="Middle"/>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{strategy_type}]]></textFieldExpression>
+			</textField>
+			<textField pattern="¤ #,##0.00" isBlankWhenNull="true">
+				<reportElement x="450" y="2" width="104" height="20"/>
+				<textElement verticalAlignment="Middle"/>
+				<textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{rate}]]></textFieldExpression>
+			</textField>
+			<subreport>
+				<reportElement x="300" y="22" width="254" height="20"/>
+				<subreportParameter name="price_model_id">
+					<subreportParameterExpression><![CDATA[$F{price_model_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression class="java.lang.String"><![CDATA[$P{SUBREPORT_DIR} + "plan_history_attributes_sub.jasper"]]></subreportExpression>
+			</subreport>
+		</band>
+	</detail>
+</jasperReport>

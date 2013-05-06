@@ -1,0 +1,1499 @@
+<?xml version="1.0" encoding="UTF-8"?>
+ 
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-2.0.xsd">
+    
+    <changeSet author="Panche Isajeski" context="base" id="min-balance-to-ignore-ageing">
+        <comment>March 27, 2012 Redmine #2486 New Preference - Min Balance to ignore Ageing/Overdue Notifications</comment>
+
+        <insert tableName="preference_type">
+            <column name="id" valueNumeric="51"/>
+            <column name="def_value" value="0"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="50"/>
+            <column name="foreign_id" valueNumeric="51"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Minimum Balance for which to ignore ageing"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="50"/>
+            <column name="foreign_id" valueNumeric="51"/>
+            <column name="psudo_column" value="instruction"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Minimum Balance that the business is willing to ignore if overdue on an Invoice. If set, this value will determine if the User has enough balance to continue to Ageing or receive Notifications for Unpaid Invoices"/>
+        </insert>
+    </changeSet>
+
+    <changeSet author="Panche Isajeski" context="test" id="min-balance-to-ignore-ageing_test-data">
+        <comment>March 27, 2012 Redmine #2486 New Preference - Min Balance to ignore Ageing/Overdue Notifications(Test data)</comment>
+
+        <insert tableName="preference">
+            <column name="id" valueNumeric="48"/>
+            <column name="type_id" valueNumeric="51"/>
+            <column name="table_id" valueNumeric="5"/>
+            <column name="foreign_id" valueNumeric="1"/>
+            <column name="value" value="0.000000000"/>
+        </insert>
+    </changeSet>
+
+    <changeSet author="Emiliano Conde" context="base" id="eliminate-main-order_alter-columns" runOnChange="false">
+        <comment>April 23, 2012 - Redmine #922 - Eliminate Main Order</comment>
+        <addColumn tableName="customer">
+            <column name="main_subscript_order_period_id" type="java.sql.Types.INTEGER"/>
+            <column name="next_invoice_day_of_period"  type="java.sql.Types.INTEGER"/>
+        </addColumn>
+        <update tableName="customer">
+            <column name="main_subscript_order_period_id" 
+                valueComputed="(select distinct period_id from purchase_order p where customer.current_order_id = p.id and p.is_current=1)"/>
+        </update>
+        <update tableName="customer">
+            <column name="main_subscript_order_period_id" 
+                valueComputed="(select distinct o.id from order_period o, base_user b where customer.user_id = b.id and b.entity_id = o.entity_id and o.unit_id=1 and o.value=1) "/>
+            <where>main_subscript_order_period_id is null</where>       
+        </update>
+
+        <addForeignKeyConstraint baseColumnNames="main_subscript_order_period_id" baseTableName="customer" constraintName="customer_main_subscription_period_FK" deferrable="false" initiallyDeferred="false" onDelete="NO ACTION" onUpdate="NO ACTION" referencedColumnNames="id" referencedTableName="order_period"  referencesUniqueColumn="false"/>
+        <dropForeignKeyConstraint constraintName="billing_proc_configtn_fk_1" baseTableName="billing_process_configuration"/>
+
+        <dropColumn tableName="billing_process_configuration" columnName="period_unit_id"/>
+        <dropColumn tableName="billing_process_configuration" columnName="period_value"/>
+    </changeSet>
+
+    <changeSet author="Emiliano Conde" context="base" dbms="PostgreSQL" id="eliminate-main-order_update-data-psql" >
+        <comment>April 23, 2012 - Redmine #922 - Eliminate Main Order</comment>
+        <update tableName="customer">
+            <column name="next_invoice_day_of_period" 
+                valueComputed="(select EXTRACT(DAY FROM p.active_since) from purchase_order p where customer.current_order_id = p.id and p.is_current=1)"/>
+        </update>
+        <update tableName="customer">
+            <column name="next_invoice_day_of_period"  valueNumeric="1"/>
+            <where>next_invoice_day_of_period is null</where>
+        </update>
+                
+        <dropColumn tableName="customer" columnName="current_order_id"/>
+        <dropColumn tableName="purchase_order" columnName="is_current"/>
+    </changeSet>
+
+    <changeSet author="Emiliano Conde" context="base" dbms="MySQL,Oracle,MS-SQL,HSQL,H2" id="eliminate-main-order_update-data-others" >
+       <comment>April 23, 2012 - Redmine #922 - Eliminate Main Order</comment>
+        <update tableName="customer">
+            <column name="next_invoice_day_of_period" valueNumeric="1"/>
+        </update>
+        
+        <dropColumn tableName="customer" columnName="current_order_id"/>
+        <dropColumn tableName="purchase_order" columnName="is_current"/>
+    </changeSet>
+
+    <changeSet author="Panche Isajeski" context="test" id="eliminate-main-order_test-data" >
+        <comment>April 23, 2012 - Redmine #922 - Eliminate Main Order(Test Data)</comment>
+        <update tableName="pluggable_task">
+            <column name="type_id" valueNumeric="7"/>
+            <where>id=6</where>
+        </update>
+        <insert tableName="pluggable_task_parameter">
+            <column name="id" valueNumeric="831400"/>
+            <column name="task_id" valueNumeric="6050"/>
+            <column name="name" value="interval"/>
+            <column name="int_value"/>
+            <column name="str_value" value="720"/>
+            <column name="float_value"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+
+        <delete tableName="order_line">
+            <where>order_id in (107800, 107801, 107802, 107803, 107804, 107805, 107806, 107807, 107808, 107809, 107810, 107811)</where>
+        </delete>
+        <delete tableName="purchase_order">
+            <where>id in (107800, 107801, 107802, 107803, 107804, 107805, 107806, 107807, 107808, 107809, 107810, 107811)</where>
+        </delete>
+        <delete tableName="event_log">
+            <where>table_id=21 and foreign_id in (107800, 107801, 107802, 107803, 107804, 107805, 107806, 107807, 107808, 107809, 107810, 107811)</where>
+        </delete>
+
+    </changeSet>
+  
+    <changeSet author="Emiliano Conde" context="base" id="fix-min_params_SimpleTaxCompositionTask">
+        <comment>April 24, 2012 - Fix to SimpleTaxCompositionTask </comment>
+       
+        <update tableName="pluggable_task_type">
+            <column name="min_parameters" valueNumeric="1"/>
+            <where>class_name='com.sapienter.jbilling.server.process.task.SimpleTaxCompositionTask'</where> 
+        </update>
+   </changeSet>    
+
+    <changeSet author="Emiliano Conde" context="base" dbms="PostgreSQL" id="clear-empty-meta_fields">
+        <comment>May 22, 2012 - Remove empty string metafields</comment>
+       
+        <delete tableName="customer_meta_field_map">
+            <where>meta_field_value_id in (select id from meta_field_value where dtype='string' and length(string_value)=0)</where>
+        </delete>
+        <delete tableName="meta_field_value">
+            <where>dtype='string' and length(string_value)=0</where>
+        </delete>
+    </changeSet> 
+    
+    <changeSet author="Emiliano Conde" context="base" dbms="MySQL,Oracle,MS-SQL,HSQL,H2" id="clear-empty-meta_fields">
+        <comment>May 22, 2012 - Remove empty string metafields</comment>
+       
+        <delete tableName="customer_meta_field_map">
+            <where>meta_field_value_id in (select id from meta_field_value where dtype='string' and string_value='')</where>
+        </delete>
+        <delete tableName="meta_field_value">
+            <where>dtype='string' and string_value=''</where>
+        </delete>
+    </changeSet>
+
+    <changeSet author="Panche Isajeski" context="base" id="notification-message">
+        <comment>May 28, 2012 - Adding notification messages</comment>
+
+        <addColumn tableName="notification_message">
+            <column name="attachment_type" type="java.sql.Types.VARCHAR(20)"/>
+        </addColumn>
+
+        <addColumn tableName="notification_message">
+            <column name="include_attachment" type="java.sql.Types.INTEGER"/>
+        </addColumn>
+
+        <addColumn tableName="notification_message">
+            <column name="attachment_design" type="java.sql.Types.VARCHAR(100)"/>
+        </addColumn>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="52"/>
+            <column name="foreign_id" valueNumeric="22"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Payment Entered"/>
+        </insert>
+
+        <insert tableName="notification_message_type">
+            <column name="id" valueNumeric="22"/>
+            <column name="category_id" valueNumeric="3"/>
+            <column name="optlock" valueNumeric="1"/>
+        </insert>
+
+    </changeSet>
+
+    <changeSet author="Panche Isajeski" context="test" id="notification-message_test-data">
+        <comment>May 28, 2012 - Adding notification messages(Test Data)</comment>
+
+        <update tableName="notification_message">
+            <column name="attachment_type" value="pdf"/>
+            <where>id=16</where>
+        </update>
+        <update tableName="notification_message">
+            <column name="include_attachment" valueNumeric="1"/>
+            <where>id=16</where>
+        </update>
+        <update tableName="notification_message">
+            <column name="attachment_design" value="telnic_payment_notification"/>
+            <where>id=16</where>
+        </update>
+
+        <insert tableName="notification_message">
+            <column name="id" valueNumeric="100"/>
+            <column name="type_id" valueNumeric="22"/>
+            <column name="entity_id" valueNumeric="1"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="use_flag" valueNumeric="1"/>
+            <column name="optlock" valueNumeric="1"/>
+            <column name="attachment_type" value="pdf"/>
+            <column name="include_attachment" valueNumeric="1"/>
+            <column name="attachment_design" value="telnic_payment_notification"/>
+        </insert>
+
+        <insert tableName="notification_message_section">
+            <column name="id" valueNumeric="45"/>
+            <column name="message_id" valueNumeric="100"/>
+            <column name="section" valueNumeric="1"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="notification_message_section">
+            <column name="id" valueNumeric="46"/>
+            <column name="message_id" valueNumeric="100"/>
+            <column name="section" valueNumeric="2"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="notification_message_section">
+            <column name="id" valueNumeric="47"/>
+            <column name="message_id" valueNumeric="100"/>
+            <column name="section" valueNumeric="3"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="notification_message_section">
+            <column name="id" valueNumeric="48"/>
+            <column name="message_id" valueNumeric="16"/>
+            <column name="section" valueNumeric="1"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="notification_message_section">
+            <column name="id" valueNumeric="49"/>
+            <column name="message_id" valueNumeric="16"/>
+            <column name="section" valueNumeric="2"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="notification_message_section">
+            <column name="id" valueNumeric="50"/>
+            <column name="message_id" valueNumeric="16"/>
+            <column name="section" valueNumeric="3"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+    </changeSet>
+
+    <changeSet author="Panche Isajeski" context="base" id="add-subscription-event-processor">
+        <comment>May 30, 2012 - Add subscription event processor</comment>
+
+        <addColumn tableName="mediation_cfg">
+            <column name="mediation_process_task_id" type="java.sql.Types.INTEGER"/>
+        </addColumn>
+
+        <update tableName="mediation_cfg">
+            <column name="mediation_process_task_id"
+                    valueComputed="(select DISTINCT t.id from pluggable_task t where t.type_id=33 and mediation_cfg.entity_id=t.entity_id)"/>
+        </update>
+
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueNumeric="96"/>
+            <column name="category_id" valueNumeric="16"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.mediation.task.SubscriptionEventProcessor"/>
+            <column name="min_parameters" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueNumeric="96"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Subscription event processor"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueNumeric="96"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="This subscription event based plugin. It takes records from the mediation process and translates them into billing meaningful data. It centers on recurring orders. If no order is available it creates a new one."/>
+        </insert>
+
+    </changeSet>
+
+    <changeSet author="Panche Isajeski" context="test" id="add-subscription-event-processor_test-data">
+        <comment>May 30, 2102 - Add subscription event processor(Test Data)</comment>
+
+        <insert tableName="pluggable_task">
+            <column name="id" valueNumeric="6080"/>
+            <column name="entity_id" valueNumeric="1"/>
+            <column name="type_id" valueNumeric="96"/>
+            <column name="processing_order" valueNumeric="2"/>
+            <column name="optlock" valueNumeric="1"/>
+            <column name="notes"/>
+        </insert>
+        <insert tableName="pluggable_task">
+            <column name="id" valueNumeric="6090"/>
+            <column name="entity_id" valueNumeric="1"/>
+            <column name="type_id" valueNumeric="32"/>
+            <column name="processing_order" valueNumeric="4"/>
+            <column name="optlock" valueNumeric="1"/>
+            <column name="notes"/>
+        </insert>
+
+        <insert tableName="pluggable_task_parameter">
+            <column name="id" valueNumeric="831201"/>
+            <column name="task_id" valueNumeric="6080"/>
+            <column name="name" value="billing_type"/>
+            <column name="int_value"/>
+            <column name="str_value" value="post"/>
+            <column name="float_value"/>
+            <column name="optlock" valueNumeric="1"/>
+        </insert>
+        <insert tableName="pluggable_task_parameter">
+            <column name="id" valueNumeric="831600"/>
+            <column name="task_id" valueNumeric="6090"/>
+            <column name="name" value="batch_size"/>
+            <column name="int_value"/>
+            <column name="str_value" value="100"/>
+            <column name="float_value"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="pluggable_task_parameter">
+            <column name="id" valueNumeric="831601"/>
+            <column name="task_id" valueNumeric="6090"/>
+            <column name="name" value="format_file"/>
+            <column name="int_value"/>
+            <column name="str_value" value="subscription.xml"/>
+            <column name="float_value"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="pluggable_task_parameter">
+            <column name="id" valueNumeric="831602"/>
+            <column name="task_id" valueNumeric="6090"/>
+            <column name="name" value="suffix"/>
+            <column name="int_value"/>
+            <column name="str_value" value="subscription.csv"/>
+            <column name="float_value"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="mediation_cfg">
+            <column name="id" valueNumeric="40"/>
+            <column name="entity_id" valueNumeric="1"/>
+            <column name="create_datetime" valueDate="2007-11-26T10:41:31.550"/>
+            <column name="name" value="Subscription Event"/>
+            <column name="order_value" valueNumeric="4"/>
+            <column name="pluggable_task_id" valueNumeric="6090"/>
+            <column name="mediation_process_task_id" valueNumeric="6080"/>
+            <column name="optlock" valueNumeric="1"/>
+        </insert>
+
+        <update tableName="jbilling_seqs">
+            <column name="next_id"  valueNumeric="5"/>
+            <where>name='mediation_cfg'</where>
+        </update>
+        <update tableName="jbilling_seqs">
+            <column name="next_id"  valueNumeric="8319"/>
+            <where>name='pluggable_task_parameter'</where>
+        </update>
+        <update tableName="jbilling_seqs">
+            <column name="next_id"  valueNumeric="610"/>
+            <where>name='pluggable_task'</where>
+        </update>
+
+
+    </changeSet>
+
+    <changeSet author="Panche Isajeski" context="base" id="attach-overdue-invoices-to-notifications">
+        <comment>May 31, 2012 Redmine #2718 Attach Invoices to all Overdue Notifications</comment>
+
+        <insert tableName="preference_type">
+            <column name="id" valueNumeric="52"/>
+            <column name="def_value" value="0"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="50"/>
+            <column name="foreign_id" valueNumeric="52"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Attach latest Invoice to all Overdue Notification."/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="50"/>
+            <column name="foreign_id" valueNumeric="52"/>
+            <column name="psudo_column" value="instruction"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Overdue Notification Overdue 1 2 and 3 by default do not attach Invoices to the notification email. With this preference, the latest Invoice can be attached to such notifications automatically."/>
+        </insert>
+    </changeSet>
+
+    <changeSet author="Panche Isajeski" context="base" id="mediation-console-jdbc-error-handler">
+        <comment>June 06, 2012 Redmine #2272 Mediation Console</comment>
+
+        <addColumn tableName="mediation_errors">
+            <column name="mediation_record_key" type="java.sql.Types.VARCHAR(100)"/>
+        </addColumn>
+        <addColumn tableName="mediation_errors">
+            <column name="mediation_process_id" type="java.sql.Types.INTEGER"/>
+        </addColumn>
+    </changeSet>
+
+	<changeSet author="Vikas Bodani" id="20120608-#2725-notification-category">
+		 <comment>June 15, Redmine #2725 - Custom Notification Category</comment>
+        <insert tableName="jbilling_seqs">
+            <column name="name" value="notification_category"/>
+            <column name="next_id" valueNumeric="2"/>
+        </insert>
+    </changeSet>
+
+    <changeSet author="Shweta Gupta" context="base" id="custom-notification-feature">
+        <comment>June 20, 2012 Redmine #2725 Custom Notification Feature</comment>
+
+        <addColumn tableName="notification_message">
+            <column name="notify_admin" type="java.sql.Types.INTEGER"/>
+        </addColumn>
+        <addColumn tableName="notification_message">
+            <column name="notify_partner" type="java.sql.Types.INTEGER"/>
+        </addColumn>
+        <addColumn tableName="notification_message">
+            <column name="notify_parent" type="java.sql.Types.INTEGER"/>
+        </addColumn>
+        <addColumn tableName="notification_message">
+            <column name="notify_all_parents" type="java.sql.Types.INTEGER"/>
+        </addColumn>
+
+        <update tableName="notification_message">
+            <column name="notify_admin" valueNumeric="0"/>
+        </update>
+        <update tableName="notification_message">
+            <column name="notify_partner" valueNumeric="0"/>
+        </update>
+        <update tableName="notification_message">
+            <column name="notify_parent" valueNumeric="0"/>
+        </update>
+        <update tableName="notification_message">
+            <column name="notify_all_parents" valueNumeric="0"/>
+        </update>
+    </changeSet>
+
+    <changeSet id="20120606-2718-overdue-invoice-penalty-order-task" author="Vikas Bodani">
+        <comment>Overdue Invoice penalties plug-in - new feature</comment>
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueNumeric="97"/>
+            <column name="category_id" valueNumeric="17"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.pluggableTask.OverdueInvoicePenaltyTask"/>
+            <column name="min_parameters" valueNumeric="1"/>
+        </insert>
+        
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueNumeric="97"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Penalty Task on Overude Invoice"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueNumeric="97"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="This task is responsible for applying a %-age or a fixed amount penalty on an Overdue Invoice. This task is powerful because it performs this action just before the Billing process collects orders."/>
+        </insert>
+        
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueNumeric="98"/>
+            <where>name='pluggable_task_type'</where>
+        </update>
+    </changeSet>
+
+	<changeSet author="Brian Cowdery" context="test" id="replace-test-mediation-rules">
+		<comment>July 1, 2012 Redmine # 3023 Remove mediation rules</comment>
+		<comment>Convert item 2702 to a plan with 1000 included long distance minutes.</comment>
+		<insert tableName="plan">
+			<column name="id" valueNumeric="3"/>
+			<column name="item_id" valueNumeric="2702"/>
+			<column name="description" value="Long Distance - 1000 min Included"/>
+			<column name="period_id" valueNumeric="2"/>
+		</insert>
+		<insert tableName="plan_item">
+			<column name="id" valueNumeric="3"/>
+			<column name="plan_id" valueNumeric="3"/>
+			<column name="item_id" valueNumeric="2800"/>
+			<column name="precedence" valueNumeric="-1"/>
+		</insert>		
+		<insert tableName="price_model">
+			<column name="id" valueNumeric="2005"/>
+			<column name="strategy_type" value="GRADUATED"/>
+			<column name="rate" valueNumeric="0.30"/>
+			<column name="currency_id" valueNumeric="1"/>
+		</insert>
+		<insert tableName="price_model_attribute">
+			<column name="price_model_id" valueNumeric="2005"/>
+			<column name="attribute_name" value="included"/>
+			<column name="attribute_value" value="1000"/>
+		</insert>
+		<insert tableName="plan_item_price_timeline">
+			<column name="plan_item_id" valueNumeric="3"/>
+			<column name="price_model_id" valueNumeric="2005"/>
+			<column name="start_date" valueDate="1970-01-01"/>
+		</insert>
+		<insert tableName="customer_price">
+			<column name="plan_item_id" valueNumeric="3"/>
+			<column name="user_id" valueNumeric="10762"/>
+			<column name="create_datetime" valueDate="2012-01-07"/>
+		</insert>
+		
+		<comment>Example mediation plug-in to replace testing rules.</comment>		
+		<insert tableName="pluggable_task_type">
+			<column name="id" valueNumeric="98"/>
+			<column name="category_id" valueNumeric="16"/>
+			<column name="class_name" value="com.sapienter.jbilling.server.mediation.task.ExampleMediationTask"/>
+			<column name="min_parameters" valueNumeric="0"/>
+		</insert>				
+		<update tableName="pluggable_task">
+			<column name="type_id" valueNumeric="98"/>
+			<where>id=420</where>
+		</update>
+		<delete tableName="pluggable_task_parameter">
+			<where>task_id=420</where>
+		</delete>
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueNumeric="99"/>
+            <where>name='pluggable_task_type'</where>
+        </update>
+	</changeSet>
+	
+	<changeSet author="Brian Cowdery" context="test" id="replace-pricing-rules">
+		<comment>July 2, 2012 Redmine # 3023 Remove pricing rules</comment>
+        <comment>Long Distance Plan A, $0.20/min LD-CALL</comment>
+		<insert tableName="plan">
+			<column name="id" valueNumeric="4"/>
+			<column name="item_id" valueNumeric="2700"/>
+			<column name="description" value="Long Distance Plan A"/>
+			<column name="period_id" valueNumeric="2"/>
+		</insert>
+		<insert tableName="plan_item">
+			<column name="id" valueNumeric="4"/>
+			<column name="plan_id" valueNumeric="4"/>
+			<column name="item_id" valueNumeric="2800"/>
+			<column name="precedence" valueNumeric="-1"/>
+		</insert>		
+		<insert tableName="price_model">
+			<column name="id" valueNumeric="2006"/>
+			<column name="strategy_type" value="METERED"/>
+			<column name="rate" valueNumeric="0.20"/>
+			<column name="currency_id" valueNumeric="1"/>
+		</insert>
+		<insert tableName="plan_item_price_timeline">
+			<column name="plan_item_id" valueNumeric="4"/>
+			<column name="price_model_id" valueNumeric="2006"/>
+			<column name="start_date" valueDate="1970-01-01"/>
+		</insert>				
+		<insert tableName="customer_price">
+			<column name="plan_item_id" valueNumeric="4"/>
+			<column name="user_id" valueNumeric="10760"/>
+			<column name="create_datetime" valueDate="2012-01-07"/>
+		</insert>
+
+        <comment>Long Distance Plan B, $0.05/min LD-CALL</comment>
+		<insert tableName="plan">
+			<column name="id" valueNumeric="5"/>
+			<column name="item_id" valueNumeric="2701"/>
+			<column name="description" value="Long Distance Plan B"/>
+			<column name="period_id" valueNumeric="2"/>
+		</insert>
+		<insert tableName="plan_item">
+			<column name="id" valueNumeric="5"/>
+			<column name="plan_id" valueNumeric="5"/>
+			<column name="item_id" valueNumeric="2800"/>
+			<column name="precedence" valueNumeric="-1"/>
+		</insert>		
+		<insert tableName="price_model">
+			<column name="id" valueNumeric="2007"/>
+			<column name="strategy_type" value="METERED"/>
+			<column name="rate" valueNumeric="0.05"/>
+			<column name="currency_id" valueNumeric="1"/>
+		</insert>
+		<insert tableName="plan_item_price_timeline">
+			<column name="plan_item_id" valueNumeric="5"/>
+			<column name="price_model_id" valueNumeric="2007"/>
+			<column name="start_date" valueDate="1970-01-01"/>
+		</insert>				
+		<insert tableName="customer_price">
+			<column name="plan_item_id" valueNumeric="5"/>
+			<column name="user_id" valueNumeric="10761"/>
+			<column name="create_datetime" valueDate="2012-01-07"/>
+		</insert>
+		
+		<comment>Special price for itemid 2, userid 2 (Gandalf)</comment>		
+		<insert tableName="plan_item">
+			<column name="id" valueNumeric="6"/>
+			<column name="item_id" valueNumeric="2"/>
+			<column name="precedence" valueNumeric="-1"/>
+		</insert>				
+		<insert tableName="price_model">
+			<column name="id" valueNumeric="2008"/>
+			<column name="strategy_type" value="METERED"/>
+			<column name="rate" valueNumeric="30.00"/>
+			<column name="currency_id" valueNumeric="1"/>
+		</insert>
+		<insert tableName="plan_item_price_timeline">
+			<column name="plan_item_id" valueNumeric="6"/>
+			<column name="price_model_id" valueNumeric="2008"/>
+			<column name="start_date" valueDate="1970-01-01"/>
+		</insert>			
+		<insert tableName="customer_price">
+			<column name="plan_item_id" valueNumeric="6"/>
+			<column name="user_id" valueNumeric="2"/>
+			<column name="create_datetime" valueDate="2012-01-07"/>
+		</insert>	
+
+		<comment>Long distance calls without a plan use a simple rate card</comment>
+		<insert tableName="rate_card">
+			<column name="id" valueNumeric="1"/>
+			<column name="name" value="Long Distance"/>
+			<column name="table_name" value="rate_long_distance"/>
+			<column name="entity_id" valueNumeric="1"/>
+		</insert>
+		<createTable tableName="rate_long_distance">
+			<column name="id" type="java.sql.Types.INTEGER">
+				<constraints nullable="false" primaryKey="true" primaryKeyName="rate_ld_pkey"/>
+			</column>
+			<column name="match" type="java.sql.Types.VARCHAR(20)">
+				<constraints nullable="false"/>
+			</column>
+			<column name="comment" type="java.sql.Types.VARCHAR(255)"/>
+			<column name="rate" type="java.sql.Types.NUMERIC(22,10)">
+				<constraints nullable="false"/>
+			</column>
+		</createTable>
+        <insert tableName="rate_long_distance">
+			<column name="id" valueNumeric="1"/>
+			<column name="match" value="12345678"/>
+			<column name="rate" valueNumeric="5.00"/>
+		</insert>
+		<insert tableName="rate_long_distance">
+			<column name="id" valueNumeric="2"/>
+			<column name="match" value="604"/>
+			<column name="rate" valueNumeric="7.00"/>
+		</insert>
+		<insert tableName="rate_long_distance">
+			<column name="id" valueNumeric="3"/>
+			<column name="match" value="559"/>
+			<column name="rate" valueNumeric="0.33"/>
+		</insert>
+		<insert tableName="rate_long_distance">
+			<column name="id" valueNumeric="4"/>
+			<column name="match" value="512"/>
+			<column name="rate" valueNumeric="7.00"/>
+		</insert>
+        <insert tableName="rate_long_distance">
+            <column name="id" valueNumeric="5"/>
+            <column name="match" value="550"/>
+            <column name="rate" valueNumeric="0.08"/>
+        </insert>
+        <insert tableName="rate_long_distance">
+            <column name="id" valueNumeric="6"/>
+            <column name="match" value="212"/>
+            <column name="rate" valueNumeric="0.42"/>
+        </insert>
+        <insert tableName="rate_long_distance">
+            <column name="id" valueNumeric="7"/>
+            <column name="match" value="187"/>
+            <column name="rate" valueNumeric="0.47"/>
+        </insert>
+        <insert tableName="rate_long_distance">
+            <column name="id" valueNumeric="8"/>
+            <column name="match" value="180"/>
+            <column name="rate" valueNumeric="0.26"/>
+        </insert>
+        <insert tableName="rate_long_distance">
+            <column name="id" valueNumeric="9"/>
+            <column name="match" value="178"/>
+            <column name="rate" valueNumeric="0.49"/>
+        </insert>
+        <insert tableName="rate_long_distance">
+            <column name="id" valueNumeric="10"/>
+            <column name="match" value="502"/>
+            <column name="rate" valueNumeric="0.25"/>
+        </insert>
+        <insert tableName="rate_long_distance">
+            <column name="id" valueNumeric="11"/>
+            <column name="match" value="52"/>
+            <column name="rate" valueNumeric="0.18"/>
+        </insert>
+        <insert tableName="rate_long_distance">
+            <column name="id" valueNumeric="12"/>
+            <column name="match" value="40"/>
+            <column name="rate" valueNumeric="0.13"/>
+        </insert>
+        <insert tableName="rate_long_distance">
+            <column name="id" valueNumeric="13"/>
+            <column name="match" value="44"/>
+            <column name="rate" valueNumeric="0.30"/>
+        </insert>
+
+        <update tableName="price_model">
+            <column name="strategy_type" value="RATE_CARD"/>
+            <where>id=1801</where>
+        </update>
+		<insert tableName="price_model_attribute">
+			<column name="price_model_id" valueNumeric="1801"/>
+			<column name="attribute_name" value="rate_card_id"/>
+			<column name="attribute_value" value="1"/>
+		</insert>
+		<insert tableName="price_model_attribute">
+			<column name="price_model_id" valueNumeric="1801"/>
+			<column name="attribute_name" value="lookup_field"/>
+			<column name="attribute_value" value="dst"/>
+		</insert>
+		<insert tableName="price_model_attribute">
+			<column name="price_model_id" valueNumeric="1801"/>
+			<column name="attribute_name" value="match_type"/>
+			<column name="attribute_value" value="BEST_MATCH"/>
+		</insert>
+
+		<comment>Use the price model pricing plug-in.</comment>		
+		<update tableName="pluggable_task">
+			<column name="type_id" valueNumeric="79"/>
+			<where>id=410</where>
+		</update>
+		<delete tableName="pluggable_task_parameter">
+			<where>task_id=410</where>
+		</delete>				
+	</changeSet>
+
+    <changeSet author="Brian Cowdery" context="test" id="replace-item-management-rules">
+        <comment>July 4, 2012 Redmine # 3023 Remove item management rules</comment>
+        <comment>Lemonade plan includes $15 setup fee and a monthly pass item</comment>
+        <insert tableName="plan">
+			<column name="id" valueNumeric="7"/>
+			<column name="item_id" valueNumeric="250"/>
+			<column name="description" value="Lemonade Plan"/>
+			<column name="period_id" valueNumeric="2"/>
+		</insert>
+        <insert tableName="plan_item_bundle">
+            <column name="id" valueNumeric="7"/>
+            <column name="quantity" valueNumeric="1"/>
+            <column name="period_id" valueNumeric="1"/>
+            <column name="target_customer" value="SELF"/>
+            <column name="add_if_exists" valueBoolean="false"/>
+		</insert>
+        <insert tableName="plan_item">
+			<column name="id" valueNumeric="7"/>
+			<column name="plan_id" valueNumeric="7"/>
+			<column name="item_id" valueNumeric="251"/>
+			<column name="precedence" valueNumeric="-1"/>
+            <column name="plan_item_bundle_id" valueNumeric="7"/>
+		</insert>
+        <insert tableName="price_model">
+			<column name="id" valueNumeric="2009"/>
+			<column name="strategy_type" value="METERED"/>
+			<column name="rate" valueNumeric="15.00"/>
+			<column name="currency_id" valueNumeric="1"/>
+		</insert>
+		<insert tableName="plan_item_price_timeline">
+			<column name="plan_item_id" valueNumeric="7"/>
+			<column name="price_model_id" valueNumeric="2009"/>
+			<column name="start_date" valueDate="1970-01-01"/>
+		</insert>
+
+        <insert tableName="plan_item_bundle">
+            <column name="id" valueNumeric="8"/>
+            <column name="quantity" valueNumeric="1"/>
+            <column name="period_id" valueNumeric="2"/>
+            <column name="target_customer" value="SELF"/>
+            <column name="add_if_exists" valueBoolean="false"/>
+		</insert>
+        <insert tableName="plan_item">
+			<column name="id" valueNumeric="8"/>
+			<column name="plan_id" valueNumeric="7"/>
+			<column name="item_id" valueNumeric="1"/>
+			<column name="precedence" valueNumeric="-1"/>
+            <column name="plan_item_bundle_id" valueNumeric="8"/>
+		</insert>
+        <insert tableName="price_model">
+			<column name="id" valueNumeric="2010"/>
+			<column name="strategy_type" value="METERED"/>
+			<column name="rate" valueNumeric="10.00"/>
+			<column name="currency_id" valueNumeric="1"/>
+		</insert>
+		<insert tableName="plan_item_price_timeline">
+			<column name="plan_item_id" valueNumeric="8"/>
+			<column name="price_model_id" valueNumeric="2010"/>
+			<column name="start_date" valueDate="1970-01-01"/>
+		</insert>
+
+        <comment>Lemonade monthly pass plan, graduated pricing for lemonade</comment>
+		<insert tableName="plan">
+			<column name="id" valueNumeric="9"/>
+			<column name="item_id" valueNumeric="1"/>
+			<column name="description" value="Lemonade Plan - 1 per day monthly pass"/>
+			<column name="period_id" valueNumeric="2"/>
+		</insert>
+		<insert tableName="plan_item">
+			<column name="id" valueNumeric="9"/>
+			<column name="plan_id" valueNumeric="9"/>
+			<column name="item_id" valueNumeric="2600"/>
+			<column name="precedence" valueNumeric="-1"/>
+		</insert>
+		<insert tableName="price_model">
+			<column name="id" valueNumeric="2011"/>
+			<column name="strategy_type" value="GRADUATED"/>
+			<column name="rate" valueNumeric="3.50"/>
+			<column name="currency_id" valueNumeric="1"/>
+		</insert>
+        <insert tableName="price_model_attribute">
+			<column name="price_model_id" valueNumeric="2011"/>
+			<column name="attribute_name" value="included"/>
+			<column name="attribute_value" value="1"/>
+		</insert>
+		<insert tableName="plan_item_price_timeline">
+			<column name="plan_item_id" valueNumeric="9"/>
+			<column name="price_model_id" valueNumeric="2011"/>
+			<column name="start_date" valueDate="1970-01-01"/>
+		</insert>
+        <insert tableName="customer_price">
+			<column name="plan_item_id" valueNumeric="9"/>
+			<column name="user_id" valueNumeric="1070"/>
+			<column name="create_datetime" valueDate="2012-01-07"/>
+		</insert>
+
+        <comment>Use the basic item manager and basic line total plug-ins</comment>
+		<update tableName="pluggable_task">
+			<column name="type_id" valueNumeric="28"/>
+			<where>id=1</where>
+		</update>
+		<delete tableName="pluggable_task_parameter">
+			<where>task_id=1</where>
+		</delete>
+		<update tableName="pluggable_task">
+			<column name="type_id" valueNumeric="1"/>
+			<where>id=430</where>
+		</update>
+		<delete tableName="pluggable_task_parameter">
+			<where>task_id=430</where>
+		</delete>
+    </changeSet>
+
+    <changeSet author="Brian Cowdery" context="test" id="remove-validate-purchase-rules">
+        <comment>July 5, 2012 Redmine # 3023 Remove validate purchase rules</comment>
+        <comment>Lemonade all you can drink monthly plan</comment>
+		<insert tableName="plan">
+			<column name="id" valueNumeric="10"/>
+			<column name="item_id" valueNumeric="2"/>
+			<column name="description" value="Lemonade Plan - all you can drink monthly"/>
+			<column name="period_id" valueNumeric="2"/>
+		</insert>
+		<insert tableName="plan_item">
+			<column name="id" valueNumeric="10"/>
+			<column name="plan_id" valueNumeric="10"/>
+			<column name="item_id" valueNumeric="1"/>
+			<column name="precedence" valueNumeric="-1"/>
+		</insert>
+		<insert tableName="price_model">
+			<column name="id" valueNumeric="2012"/>
+			<column name="strategy_type" value="METERED"/>
+			<column name="rate" valueNumeric="10.00"/>
+			<column name="currency_id" valueNumeric="1"/>
+		</insert>
+		<insert tableName="plan_item_price_timeline">
+			<column name="plan_item_id" valueNumeric="10"/>
+			<column name="price_model_id" valueNumeric="2012"/>
+			<column name="start_date" valueDate="1970-01-01"/>
+		</insert>
+        <insert tableName="customer_price">
+			<column name="plan_item_id" valueNumeric="10"/>
+			<column name="user_id" valueNumeric="2"/>
+			<column name="create_datetime" valueDate="2012-01-07"/>
+		</insert>
+        <insert tableName="customer_price">
+			<column name="plan_item_id" valueNumeric="10"/>
+			<column name="user_id" valueNumeric="13"/>
+			<column name="create_datetime" valueDate="2012-01-07"/>
+		</insert>
+
+		<comment>Example validate purchase plug-in to replace validation rules.</comment>
+		<insert tableName="pluggable_task_type">
+			<column name="id" valueNumeric="99"/>
+			<column name="category_id" valueNumeric="19"/>
+			<column name="class_name" value="com.sapienter.jbilling.server.user.tasks.ExampleValidatePurchaseTask"/>
+			<column name="min_parameters" valueNumeric="0"/>
+		</insert>
+		<update tableName="pluggable_task">
+			<column name="type_id" valueNumeric="99"/>
+			<where>id=560</where>
+		</update>
+		<delete tableName="pluggable_task_parameter">
+			<where>task_id=560</where>
+		</delete>
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueNumeric="100"/>
+            <where>name='pluggable_task_type'</where>
+        </update>
+    </changeSet>
+
+    <changeSet author="Brian Cowdery" context="test" id="remove-cancel-fee-rules">
+        <comment>July 6, 2012 Redmine # 3023 Remove cancelation fee rules</comment>
+		<comment>Use the cancellation fee task instead of the rules task</comment>
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueNumeric="93"/>
+            <column name="category_id" valueNumeric="17"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.order.task.CancellationFeeTask"/>
+            <column name="min_parameters" valueNumeric="2"/>
+        </insert>
+		<update tableName="pluggable_task">
+			<column name="type_id" valueNumeric="93"/>
+			<where>id=450</where>
+		</update>
+		<delete tableName="pluggable_task_parameter">
+			<where>task_id=450</where>
+		</delete>
+        <insert tableName="pluggable_task_parameter">
+            <column name="id" valueNumeric="8307"/>
+            <column name="task_id" valueNumeric="450"/>
+            <column name="name" value="product_cancelled"/>
+            <column name="str_value" value="1"/>
+            <column name="optlock" valueNumeric="1"/>
+        </insert>
+        <insert tableName="pluggable_task_parameter">
+            <column name="id" valueNumeric="8308"/>
+            <column name="task_id" valueNumeric="450"/>
+            <column name="name" value="product_fee"/>
+            <column name="str_value" value="24"/>
+            <column name="optlock" valueNumeric="1"/>
+        </insert>
+        <insert tableName="pluggable_task_parameter">
+            <column name="id" valueNumeric="8309"/>
+            <column name="task_id" valueNumeric="450"/>
+            <column name="name" value="use_cancelled_quantity"/>
+            <column name="str_value" value="true"/>
+            <column name="optlock" valueNumeric="1"/>
+        </insert>
+    </changeSet>
+
+    <changeSet author="Brian Cowdery" context="test" id="remove-provisioning-rules">
+        <comment>July 6, 2012 Redmine # 3023 Remove provisioning rules</comment>
+		<comment>Example provisioning plug-in to replace testing rules.</comment>
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueNumeric="100"/>
+            <column name="category_id" valueNumeric="17"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.provisioning.task.ExampleProvisioningTask"/>
+            <column name="min_parameters" valueNumeric="0"/>
+        </insert>
+		<update tableName="pluggable_task">
+			<column name="type_id" valueNumeric="100"/>
+			<where>id=490</where>
+		</update>
+		<delete tableName="pluggable_task_parameter">
+			<where>task_id=490</where>
+		</delete>
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueNumeric="101"/>
+            <where>name='pluggable_task_type'</where>
+        </update>
+
+
+        <comment>Remove internal rules task plugin.</comment>
+		<delete tableName="pluggable_task_parameter">
+			<where>task_id=540</where>
+		</delete>
+		<delete tableName="pluggable_task">
+			<where>id=540</where>
+		</delete>
+    </changeSet>
+
+    <changeSet author="Brian Cowdery" id="remove-rules-generator-task">
+        <comment>July 8, 2012 Redmine # 3023 Remove rules generator API</comment>
+        <delete tableName="pluggable_task_parameter">
+            <where>task_id=6040</where>
+        </delete>
+        <delete tableName="pluggable_task">
+            <where>id=6040</where>
+        </delete>
+        <delete tableName="pluggable_task_type">
+            <where>id=78</where>
+        </delete>
+    </changeSet>
+
+    <changeSet author="Brian Cowdery" context="test" id="deprecate-unused-items">
+        <comment>Mark unused items so that they can be re-purposed for other tests.</comment>
+    </changeSet>
+
+
+    <changeSet author="Panche Isajeski" context="base" id="add-event-based-custom-notification-task">
+        <comment>Jul 12, 2012 - #2725 - Custom notifications</comment>
+
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueNumeric="101"/>
+            <column name="category_id" valueNumeric="17"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.user.tasks.EventBasedCustomNotificationTask"/>
+            <column name="min_parameters" valueNumeric="1"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueNumeric="101"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Event based custom notification task"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueNumeric="101"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="The event based custom notification task takes the custom notification message and does the notification when the internal event occurred"/>
+        </insert>
+    </changeSet>
+ 
+    <changeSet context="base" author="Vikas Bodani" id="20120814-New entry into jbilling_seqs for Redmine #2825">   
+	<insert tableName="jbilling_seqs">
+            <column name="name" value="plan_item_bundle"/>
+            <column name="next_id" valueNumeric="1"/>
+        </insert>
+    </changeSet>
+
+    <changeSet context="test" author="Juan Vidal" id="20120530-#2825-Fix-percentage-products-in-Plans-test-data">
+        <!--Upgrade data-->
+
+        <insert tableName="item">
+            <column name="id" valueNumeric="3100"/>
+            <column name="internal_number" value="percentageLineTest"/>
+            <column name="entity_id" valueNumeric="1"/>
+            <column name="percentage"/>
+            <column name="deleted" valueNumeric="0"/>
+            <column name="has_decimals" valueNumeric="0"/>
+            <column name="optlock" valueNumeric="1"/>
+            <column name="gl_code"/>
+        </insert>
+
+        <insert tableName="item_type_map">
+            <column name="item_id" valueNumeric="3100"/>
+            <column name="type_id" valueNumeric="2301"/>
+        </insert>
+
+        <insert tableName="plan">
+            <column name="id" valueNumeric="100"/>
+            <column name="item_id" valueNumeric="3100"/>
+            <column name="description" value="Percentage Line Plan."/>
+            <column name="period_id" valueNumeric="2"/>
+        </insert>
+
+        <insert tableName="price_model">
+            <column name="id" valueNumeric="2100"/>
+            <column name="strategy_type" value="METERED"/>
+            <column name="rate" valueNumeric="0.0000000000"/>
+            <column name="included_quantity"/>
+            <column name="currency_id" valueNumeric="1"/>
+            <column name="next_model_id"/>
+        </insert>
+        <insert tableName="price_model">
+            <column name="id" valueNumeric="2101"/>
+            <column name="strategy_type" value="METERED"/>
+            <column name="rate" valueNumeric="3.5000000000"/>
+            <column name="included_quantity"/>
+            <column name="currency_id" valueNumeric="1"/>
+            <column name="next_model_id"/>
+        </insert>
+        <insert tableName="price_model">
+            <column name="id" valueNumeric="2102"/>
+            <column name="strategy_type" value="METERED"/>
+            <column name="rate" valueNumeric="25.0000000000"/>
+            <column name="included_quantity"/>
+            <column name="currency_id" valueNumeric="1"/>
+            <column name="next_model_id"/>
+        </insert>
+        <insert tableName="price_model">
+            <column name="id" valueNumeric="2103"/>
+            <column name="strategy_type" value="METERED"/>
+            <column name="rate" valueNumeric="40.0000000000"/>
+            <column name="included_quantity"/>
+            <column name="currency_id" valueNumeric="1"/>
+            <column name="next_model_id"/>
+        </insert>
+
+        <insert tableName="plan_item_bundle">
+            <column name="id" valueNumeric="1"/>
+            <column name="quantity" valueNumeric="1.0000000000"/>
+            <column name="period_id" valueNumeric="2"/>
+            <column name="target_customer" value="SELF"/>
+            <column name="add_if_exists" value="t"/>
+        </insert>
+        <insert tableName="plan_item_bundle">
+            <column name="id" valueNumeric="2"/>
+            <column name="quantity" valueNumeric="1.0000000000"/>
+            <column name="period_id" valueNumeric="5"/>
+            <column name="target_customer" value="SELF"/>
+            <column name="add_if_exists" value="t"/>
+        </insert>
+        <insert tableName="plan_item_bundle">
+            <column name="id" valueNumeric="3"/>
+            <column name="quantity" valueNumeric="1.0000000000"/>
+            <column name="period_id" valueNumeric="1"/>
+            <column name="target_customer" value="SELF"/>
+            <column name="add_if_exists" value="t"/>
+        </insert>
+        <insert tableName="plan_item_bundle">
+            <column name="id" valueNumeric="4"/>
+            <column name="quantity" valueNumeric="1.0000000000"/>
+            <column name="period_id" valueNumeric="2"/>
+            <column name="target_customer" value="SELF"/>
+            <column name="add_if_exists" value="t"/>
+        </insert>
+
+        <insert tableName="plan_item">
+            <column name="id" valueNumeric="100"/>
+            <column name="plan_id" valueNumeric="100"/>
+            <column name="item_id" valueNumeric="14"/>
+            <column name="precedence" valueNumeric="-1"/>
+            <column name="plan_item_bundle_id" valueNumeric="1"/>
+        </insert>
+        <insert tableName="plan_item">
+            <column name="id" valueNumeric="101"/>
+            <column name="plan_id" valueNumeric="100"/>
+            <column name="item_id" valueNumeric="2602"/>
+            <column name="precedence" valueNumeric="-1"/>
+            <column name="plan_item_bundle_id" valueNumeric="2"/>
+        </insert>
+        <insert tableName="plan_item">
+            <column name="id" valueNumeric="102"/>
+            <column name="plan_id" valueNumeric="100"/>
+            <column name="item_id" valueNumeric="2700"/>
+            <column name="precedence" valueNumeric="-1"/>
+            <column name="plan_item_bundle_id" valueNumeric="3"/>
+        </insert>
+        <insert tableName="plan_item">
+            <column name="id" valueNumeric="103"/>
+            <column name="plan_id" valueNumeric="100"/>
+            <column name="item_id" valueNumeric="2701"/>
+            <column name="precedence" valueNumeric="-1"/>
+            <column name="plan_item_bundle_id" valueNumeric="4"/>
+        </insert>
+
+        <insert tableName="item_price_timeline">
+            <column name="item_id" valueNumeric="3100"/>
+            <column name="price_model_id" valueNumeric="2100"/>
+            <column name="start_date" valueDate="1970-01-01"/>
+        </insert>
+
+        <insert tableName="plan_item_price_timeline">
+            <column name="plan_item_id" valueNumeric="101"/>
+            <column name="price_model_id" valueNumeric="2101"/>
+            <column name="start_date" valueDate="1970-01-01"/>
+        </insert>
+        <insert tableName="plan_item_price_timeline">
+            <column name="plan_item_id" valueNumeric="102"/>
+            <column name="price_model_id" valueNumeric="2102"/>
+            <column name="start_date" valueDate="1970-01-01"/>
+        </insert>
+        <insert tableName="plan_item_price_timeline">
+            <column name="plan_item_id" valueNumeric="103"/>
+            <column name="price_model_id" valueNumeric="2103"/>
+            <column name="start_date" valueDate="1970-01-01"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="14"/>
+            <column name="foreign_id" valueNumeric="3100"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Percentage Line Test Plan"/>
+        </insert>
+        
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueNumeric="2"/>
+            <where>name='plan_item_bundle'</where>
+        </update>
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueNumeric="32"/>
+            <where>name='item'</where>
+        </update>
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueNumeric="22"/>
+            <where>name='price_model'</where>
+        </update>
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueNumeric="2"/>
+            <where>name='plan'</where>
+        </update>
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueNumeric="2"/>
+            <where>name='plan_item'</where>
+        </update>
+        
+    </changeSet>
+
+    <changeSet context="test" author="Brian Cowdery" id="example-ws-plugin">
+        <comment>Aug 17, 2012 Redmine #3246 - Generic webservice example</comment>
+
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueNumeric="102"/>
+            <column name="category_id" valueNumeric="17"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.user.tasks.NewContactWebServiceTask"/>
+            <column name="min_parameters" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueNumeric="102"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Example web-service plugin"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueNumeric="102"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="This is an example plug-in that invokes a remote web-service when a new contact is created."/>
+        </insert>
+    </changeSet>
+
+    <changeSet author="Nikhil Sharma" context="base" id="add-new-simple-mediation-processor">
+        <comment>Oct 12, 2012 - Add Simple Mediation processor</comment>
+
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueNumeric="103"/>
+            <column name="category_id" valueNumeric="16"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.mediation.task.SimpleMediationTask"/>
+            <column name="min_parameters" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueNumeric="103"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Simple Mediation Processor"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueNumeric="103"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="This is a simple mediation processor runs on file mediation-sample.csv. "/>
+        </insert>
+    </changeSet>
+
+    <changeSet author="Emir Calabuch" context="test" id="decrypted-test-cc-data">
+        <update tableName="credit_card">
+            <column name="cc_number" value="4111111111111152"/>
+            <column name="name" value="customer"/>
+            <where>id in (1,2,3)</where>
+        </update>
+        <update tableName="credit_card">
+            <column name="cc_number" value="4111111111111111"/>
+            <column name="name" value="Frodo Baggins"/>
+            <where>id in
+                (13,19,22,23,25,26,28,29,32,33,38,39,41,42,43,44,45,47,51,52,56,57,59,60,61,62,65,66,68,69,70,71,75,76,79,80,82,
+                83,86,87,88,89,90,92,93,94,97,98,101,103,105,106,107,109,110,112,113,115,118,120,123,125,126,130,131,133,134,140,141,142,145,
+                148,149,150,155,161,163,165,172,173,174,177,178,182,183,185,186,187,188,189,190,194,195,196,197,200,203,204,205,206,207,209,
+                210,211,212,214,216,217,219,220,222,225,227,228,231,234,236,239,240,241,244,247,248,252,253,259,260,262,263,264,265,266,267,
+                268,272,273,276,277,278,279,283,284,288,290,291,293,296,297,301,302,303,305,306,307,308,309,311,312,313,314,315,317,318,319,
+                320,321,322,323,324,325,327,328,329,333,334,336,337,339,342,343,345,346,348,349,351,352,353,354,355,356,359,360,361,362,364,
+                369,372,376,378,379,385,387,391,395,396,397,398,400,402,404,405,406,407,408,411,413,416,417,418,420,426,428,429,430,440,442,
+                443,444,447,450,451,452,453,454,456,458,459,460,461,466,467,469,470,471,472,475,477,478,481,482,486,488,491,493,494,496,498,
+                499,502,504,505,506,507,508,511,515,517,518,520,522,523,526,527,529,530,533,535,537,538,539,543,551,553,554,555,558,566,567,
+                569,571,574,577,578,579,582,584,586,588,590,594,595,596,597,598,601,602,603,604,606,612,616,621,627,628,630,632,634,635,638,
+                639,642,646,647,649,650,651,652,653,654,655,659,663,665,667,668,669,673,675,676,678,681,682,683,685,687,689,693,694,695,696,
+                697,698,701,703,705,709,710,713,715,721,722,727,728,731,732,733,735,736,738,739,740,741,743,744,745,747,749,751,752,753,757,
+                758,760,761,762,764,765,767,769,770,771,772,777,780,784,786,787,789,792,794,795,799,801,802,803,804,806,810,812,813,815,816,
+                818,820,827,828,829,830,832,835,837,840,843,844,846,848,849,851,852,853,854,855,860,861,862,863,865,868,873,878,884,887,888,
+                891,893,896,898,900,903,905,906,910,911,913,914,916,917,918,921,923,927,928,929,930,931,932,933,935,936,938,941,942,945,950,
+                953,954,955,956,957,958,960,961,963,964,966,969,970,971,972,974,976,978,982,983,989,990,992,993,996,1000,1001,1002,1003,1004,
+                1008,1009,1010,1011)
+            </where>
+        </update>
+        <update tableName="credit_card">
+            <column name="cc_number" value="4111111111111152"/>
+            <column name="name" value="Frodo Baggins"/>
+            <where>id in
+                (14,15,16,17,18,20,21,24,27,30,31,34,35,36,37,40,46,48,49,50,53,54,55,58,63,64,67,72,73,74,77,78,81,84,85,91,95,96,
+                99,100,102,104,108,111,114,116,117,119,121,122,124,127,128,129,132,135,136,137,138,139,143,144,146,147,151,152,153,154,156,
+                157,158,159,160,162,164,166,167,168,169,170,171,175,176,179,180,181,184,191,192,193,198,199,201,202,208,213,215,218,221,223,
+                224,226,229,230,232,233,235,237,238,242,243,245,246,249,250,251,254,255,256,257,258,261,269,270,271,274,275,280,281,282,285,
+                286,287,289,292,294,295,298,299,300,304,310,316,326,330,331,332,335,338,340,341,344,347,350,357,358,363,365,366,367,368,370,
+                371,373,374,375,377,380,381,382,383,384,386,388,389,390,392,393,394,399,401,403,409,410,412,414,415,419,421,422,423,424,425,
+                427,431,432,433,434,435,436,437,438,439,441,445,446,448,449,455,457,462,463,464,465,468,473,474,476,479,480,483,484,485,487,
+                489,490,492,495,497,500,501,503,509,510,512,513,514,516,519,521,524,525,528,531,532,534,536,540,541,542,544,545,546,547,548,
+                549,550,552,556,557,559,560,561,562,563,564,565,568,570,572,573,575,576,580,581,583,585,587,589,591,592,593,599,600,605,607,
+                608,609,610,611,613,614,615,617,618,619,620,622,623,624,625,626,629,631,633,636,637,640,641,643,644,645,648,656,657,658,660,
+                661,662,664,666,670,671,672,674,677,679,680,684,686,688,690,691,692,699,700,702,704,706,707,708,711,712,714,716,717,718,719,
+                720,723,724,725,726,729,730,734,737,742,746,748,750,754,755,756,758,759,763,766,768,773,774,775,776,778,779,781,782,783,785,
+                788,790,791,793,796,797,798,800,805,807,808,809,811,814,817,819,821,822,823,824,825,826,831,833,834,836,838,839,841,842,845,
+                847,850,856,857,858,859,864,866,867,869,870,871,872,874,875,876,877,879,880,881,882,883,885,886,889,890,892,894,895,897,899,
+                901,902,904,907,908,909,912,915,919,920,922,924,925,926,934,937,939,940,943,947,948,949,951,952,959,962,965,967,968,973,975,
+                977,979,980,981,984,985,986,987,988,991,994,995,997,998,999,1005,1006,1007,1012)
+            </where>
+        </update>
+        <update tableName="credit_card">
+            <column name="cc_number" value="5555555555554444"/>
+            <column name="name" value="Frodo Baggins"/>
+            <where>id=944</where>
+        </update>
+        <update tableName="credit_card">
+            <column name="cc_number" value="5105105105105100"/>
+            <column name="name" value="Frodo Baggins"/>
+            <where>id=946</where>
+        </update>
+        <update tableName="credit_card">
+            <column name="cc_number" value="5555555555554444"/>
+            <where>id=1013</where>
+        </update>
+        <update tableName="credit_card">
+            <column name="cc_number" value="4222222222222"/>
+            <column name="name" value="Test Currency Router 1"/>
+            <where>id=101300</where>
+        </update>
+        <update tableName="credit_card">
+            <column name="cc_number" value="4222222222222"/>
+            <column name="name" value="Test Currency Router 2"/>
+            <where>id=101301</where>
+        </update>
+        <update tableName="credit_card">
+            <column name="cc_number" value="4111111111111152"/>
+            <column name="name" value="partner1"/>
+            <where>id=101400</where>
+        </update>
+        <update tableName="credit_card">
+            <column name="cc_number" value="4111111111111152"/>
+            <column name="name" value="partner3"/>
+            <where>id=101401</where>
+        </update>
+    </changeSet>
+
+    <changeSet author="Vikas Bodani" context="base" id="3990 - Made order_id persistent to invoiceLineDTO">
+        <comment>Requirement 3990 - Added order_id to the Invoice_Line table.</comment>
+        <addColumn tableName="invoice_line">
+            <column name="order_id" defaultValue="null" type="java.sql.Types.INTEGER"/>
+        </addColumn>
+        <addForeignKeyConstraint
+                baseColumnNames="order_id" baseTableName="invoice_line"
+                constraintName="invoice_line_fk_4" deferrable="false"
+                initiallyDeferred="false" onDelete="NO ACTION" onUpdate="NO ACTION"
+                referencedColumnNames="id" referencedTableName="purchase_order"
+                referencesUniqueColumn="false" />
+    </changeSet>
+
+    <changeSet author="Vladimir Carevski" context="base" id="2006 - Force Unique Emails Preference">
+        <comment>Bugs #2006 - Option to force unique emails in the company</comment>
+
+        <insert tableName="preference_type">
+            <column name="id" valueNumeric="53"/>
+            <column name="def_value" value="0"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="50"/>
+            <column name="foreign_id" valueNumeric="53"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Force Unique Emails"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="50"/>
+            <column name="foreign_id" valueNumeric="53"/>
+            <column name="psudo_column" value="instruction"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Set to 1 in order to force unique emails among the users/customers into the company. Set to 0 otherwise."/>
+        </insert>
+    </changeSet>
+    
+    <changeSet author="Amol Gadre" context="base" id="4474 - Entity to be deletable.">
+        <comment>Requirement #4474 - Added deleted column in entity to allow for soft deletion.</comment>
+        <addColumn tableName="entity">
+            <column defaultValueNumeric="0" name="deleted" type="java.sql.Types.INTEGER">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet author="Juan Vidal" context="test" id="20120225-#4491">
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="14"/>
+            <column name="foreign_id" valueNumeric="3101"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Cool Plan"/>
+        </insert>
+
+        <insert tableName="item">
+            <column name="id" valueNumeric="3101"/>
+            <column name="internal_number" value="coolPlan"/>
+            <column name="entity_id" valueNumeric="1"/>
+            <column name="percentage"/>
+            <column name="deleted" valueNumeric="0"/>
+            <column name="has_decimals" valueNumeric="0"/>
+            <column name="optlock" valueNumeric="1"/>
+            <column name="gl_code"/>
+        </insert>
+
+        <insert tableName="item_type_map">
+            <column name="item_id" valueNumeric="3101"/>
+            <column name="type_id" valueNumeric="2301"/>
+        </insert>
+
+        <insert tableName="plan">
+            <column name="id" valueNumeric="101"/>
+            <column name="item_id" valueNumeric="3101"/>
+            <column name="description" value="Cool plan."/>
+            <column name="period_id" valueNumeric="2"/>
+        </insert>
+
+        <insert tableName="plan_item_bundle">
+            <column name="id" valueNumeric="5"/>
+            <column name="quantity" valueNumeric="1.0000000000"/>
+            <column name="period_id" valueNumeric="1"/>
+            <column name="target_customer" value="SELF"/>
+            <column name="add_if_exists" value="t"/>
+        </insert>
+        <insert tableName="plan_item_bundle">
+            <column name="id" valueNumeric="6"/>
+            <column name="quantity" valueNumeric="1.0000000000"/>
+            <column name="period_id" valueNumeric="1"/>
+            <column name="target_customer" value="SELF"/>
+            <column name="add_if_exists" value="t"/>
+        </insert>
+
+        <insert tableName="plan_item">
+            <column name="id" valueNumeric="104"/>
+            <column name="plan_id" valueNumeric="101"/>
+            <column name="item_id" valueNumeric="2602"/>
+            <column name="precedence" valueNumeric="-1"/>
+            <column name="plan_item_bundle_id" valueNumeric="5"/>
+        </insert>
+        <insert tableName="plan_item">
+            <column name="id" valueNumeric="105"/>
+            <column name="plan_id" valueNumeric="101"/>
+            <column name="item_id" valueNumeric="2700"/>
+            <column name="precedence" valueNumeric="-1"/>
+            <column name="plan_item_bundle_id" valueNumeric="6"/>
+        </insert>
+
+        <insert tableName="price_model">
+            <column name="id" valueNumeric="2104"/>
+            <column name="strategy_type" value="METERED"/>
+            <column name="rate" valueNumeric="99.9900000000"/>
+            <column name="included_quantity"/>
+            <column name="currency_id" valueNumeric="1"/>
+            <column name="next_model_id"/>
+        </insert>
+        <insert tableName="price_model">
+            <column name="id" valueNumeric="2105"/>
+            <column name="strategy_type" value="METERED"/>
+            <column name="rate" valueNumeric="10.0000000000"/>
+            <column name="included_quantity"/>
+            <column name="currency_id" valueNumeric="1"/>
+            <column name="next_model_id"/>
+        </insert>
+        <insert tableName="price_model">
+            <column name="id" valueNumeric="2106"/>
+            <column name="strategy_type" value="METERED"/>
+            <column name="rate" valueNumeric="20.0000000000"/>
+            <column name="included_quantity"/>
+            <column name="currency_id" valueNumeric="1"/>
+            <column name="next_model_id"/>
+        </insert>
+
+        <insert tableName="item_price_timeline">
+            <column name="item_id" valueNumeric="3101"/>
+            <column name="price_model_id" valueNumeric="2104"/>
+            <column name="start_date" valueDate="1970-01-01"/>
+        </insert>
+
+        <insert tableName="plan_item_price_timeline">
+            <column name="plan_item_id" valueNumeric="104"/>
+            <column name="price_model_id" valueNumeric="2105"/>
+            <column name="start_date" valueDate="1970-01-01"/>
+        </insert>
+        <insert tableName="plan_item_price_timeline">
+            <column name="plan_item_id" valueNumeric="105"/>
+            <column name="price_model_id" valueNumeric="2106"/>
+            <column name="start_date" valueDate="1970-01-01"/>
+        </insert>
+    </changeSet>
+    
+    <changeSet author="Maruthi" context="base" id="4933 - Invoice Date and Invoice Due Date are Incorrect">
+        <update tableName="international_description">
+            <column name="content" value="Default blank. This preference has to be a date (In the format yyyy-mm-dd. Example: 2000-01-31), the system will make sure that all your invoices have their dates in an incremental way. Any invoice with a greater 'ID' will also have a greater (or equal) date. In other words, a new invoice can not have an earlier date than an existing (older) invoice. To use this preference, set it as a string with the date where to start. This preference will not be used if blank"/>
+            <where>table_id=50 and foreign_id=31 and language_id=1 and psudo_column='instruction'</where>
+        </update>
+        <update tableName="preference_type">
+            <column name="def_value" value=""/>
+            <where>id=31</where>
+        </update>
+	</changeSet>
+</databaseChangeLog>
+         

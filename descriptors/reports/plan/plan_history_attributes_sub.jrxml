@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="total_invoiced_day" pageWidth="254" pageHeight="802" columnWidth="254" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0">
+	<property name="ireport.zoom" value="2.6573415000000016"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="price_model_id" class="java.lang.Integer"/>
+	<queryString>
+		<![CDATA[select
+            attribute_name,
+            attribute_value
+        from
+            price_model_attribute
+        where
+            price_model_id = $P{price_model_id}]]>
+	</queryString>
+	<field name="attribute_name" class="java.lang.String"/>
+	<field name="attribute_value" class="java.lang.String"/>
+	<detail>
+		<band height="20">
+			<rectangle>
+				<reportElement x="0" y="0" width="254" height="20" backcolor="#EEEEEE"/>
+				<graphicElement>
+					<pen lineWidth="0.0" lineStyle="Double"/>
+				</graphicElement>
+			</rectangle>
+			<line>
+				<reportElement x="5" y="1" width="240" height="1" forecolor="#909090">
+					<printWhenExpression><![CDATA[Boolean.valueOf($V{COLUMN_COUNT} > 1)]]></printWhenExpression>
+				</reportElement>
+				<graphicElement>
+					<pen lineWidth="0.5" lineStyle="Dashed"/>
+				</graphicElement>
+			</line>
+			<textField>
+				<reportElement x="0" y="0" width="150" height="20" backcolor="#EEEEEE"/>
+				<box leftPadding="5"/>
+				<textElement verticalAlignment="Middle"/>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{attribute_name}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="150" y="0" width="104" height="20" backcolor="#EEEEEE"/>
+				<textElement verticalAlignment="Middle"/>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{attribute_value}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+</jasperReport>

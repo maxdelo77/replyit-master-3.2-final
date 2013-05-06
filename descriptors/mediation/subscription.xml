@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE format SYSTEM "mediation.dtd" >
+<format>
+    <field>
+    	<name>user_name</name>
+    	<type>string</type>
+    	<isKey/>
+    </field>
+    <field>
+    	<name>initiated</name>
+    	<type>date</type>
+        <isKey/>
+    </field>
+    <field>
+    	<name>product_code</name>
+    	<type>integer</type>
+        <isKey/>
+    </field>
+    <field>
+    	<name>quantity</name>
+    	<type>integer</type>
+    </field>
+    <field>
+        <name>active_until</name>
+        <type>date</type>
+    </field>
+</format>
